@@ -1,12 +1,8 @@
 package main
 
 import (
-	// "fmt"
 	"log"
 	"net/http"
-
-	// "encoding/json"
-	// "fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -25,6 +21,7 @@ func main() {
 	router.HandleFunc("/api/related-words", handler.GetWordListDataHandler).Methods("GET")
 
 	log.Println("Starting server on :8080")
+
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalf("Could not start server: %s\n", err)
 	}

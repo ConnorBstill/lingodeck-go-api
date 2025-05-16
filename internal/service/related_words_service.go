@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -9,13 +10,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-// type WordListItem struct {
-// 	id          int16  `json:"id"`
-// 	word        string `json:"word"`
-// 	translation string `json:"translation"`
-// }
+type Translation struct {
+	ID          int    `json:"id"`
+	Translation string `json:"translation"`
+	Word        string `json:"word"`
+}
 
-func GenerateRelatedWordList(term string, languageCode string, numOfResults int16) *genai.Content {
+func GetRelatedWordList(term string, languageCode string, numOfResults int16, c chan []Translation) {
 	ctx := context.Background()
 
 	genaiApiKey := os.Getenv("GEMINI_API_KEY")
@@ -26,7 +27,7 @@ func GenerateRelatedWordList(term string, languageCode string, numOfResults int1
 		fmt.Println("Error getting AI client", err)
 		defer client.Close()
 
-		return nil
+		return
 	}
 
 	model := client.GenerativeModel("gemini-1.5-flash")
@@ -63,8 +64,25 @@ func GenerateRelatedWordList(term string, languageCode string, numOfResults int1
 		fmt.Println("Error getting related words", err)
 		defer client.Close()
 
-		return nil
+		return
 	}
 
-	return resp.Candidates[0].Content
+	var respJsonString string
+	if textPart, ok := resp.Candidates[0].Content.Parts[0].(genai.Text); ok {
+		respJsonString = string(textPart)
+	} else {
+		fmt.Println("Error: Expected a Text part")
+		return
+	}
+
+	var translationsList []Translation
+
+	unmarshalErr := json.Unmarshal([]byte(respJsonString), &translationsList)
+	if unmarshalErr != nil {
+		fmt.Println("Error parsing json", err)
+
+		return
+	}
+
+	c <- translationsList
 }
